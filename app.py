@@ -1,0 +1,93 @@
+from flask import Flask, request, jsonify, render_template, abort
+from flask.json import JSONEncoder
+from werkzeug.exceptions import BadRequest
+import datetime
+import psycopg2
+import os
+
+# Number of days to query back from today.
+WINDOW = 28
+
+app = Flask(__name__)
+
+query = """
+select dr.d, unlinked.total as unlinked_total, linked.total as linked_total
+FROM
+    (
+        SELECT d::date from generate_series(date %s, date %s, '1 day') as gs(d)
+    ) dr
+left join
+    (
+        select notification_date, coalesce(count(notification_date),0) as total from public."case"
+        where
+            not likely_source_of_infection = 'Locally acquired - linked to known case or cluster' and
+            postcode in %s
+        group by notification_date
+    ) unlinked
+on dr.d = unlinked.notification_date
+left join
+    (
+        select notification_date, coalesce(count(notification_date),0) as total from public."case"
+        where
+            likely_source_of_infection = 'Locally acquired - linked to known case or cluster' and
+            postcode in %s
+        group by notification_date
+    ) linked
+on dr.d = linked.notification_date
+"""
+
+
+class CustomJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        try:
+            if isinstance(obj, datetime.date):
+                return obj.isoformat()
+            iterable = iter(obj)
+        except TypeError:
+            pass
+        else:
+            return list(iterable)
+        return JSONEncoder.default(self, obj)
+
+app = Flask(__name__)
+app.json_encoder = CustomJSONEncoder
+
+@app.route('/api/v1/cases', methods=['POST'])
+def get_data():
+    if (request.is_json):
+        conn = psycopg2.connect(
+            dbname=os.environ['DATABASE_NAME'],
+            user=os.environ['DATABASE_USER'],
+            password=os.environ['DATABASE_PASSWORD'],
+            host=os.environ['DATABASE_HOST']
+        )
+        with conn:
+            with conn.cursor() as curs:
+                post = request.get_json()
+                if 'postcodes' not in post:
+                    abort(400, description="postcodes not found")
+                postcodes = tuple(
+                    [str(int(postcode)) for postcode in post['postcodes']]
+                )
+                end = datetime.datetime.now()
+                start = end - datetime.timedelta(days=WINDOW)
+                curs.execute(
+                    query,
+                    (
+                        start.date(),
+                        end.date(),
+                        postcodes,
+                        postcodes
+                    )
+                )
+                results = curs.fetchall()
+                return jsonify(results)
+
+@app.errorhandler(BadRequest)
+def handle_bad_request(e):
+    return 'bad request!', 400
+
+@app.route('/')
+def index():
+    return render_template("index.html")
+
