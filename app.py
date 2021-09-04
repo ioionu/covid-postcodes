@@ -36,6 +36,10 @@ left join
 on dr.d = linked.notification_date
 """
 
+postcode_query = """
+select distinct  postcode, lga_name19 from \"case\" order by lga_name19;
+"""
+
 
 class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
@@ -82,6 +86,21 @@ def get_data():
                 )
                 results = curs.fetchall()
                 return jsonify(results)
+
+@app.route('/api/v1/postcodes', methods=['GET'])
+def get_postcodes():
+    conn = psycopg2.connect(
+        dbname=os.environ['DATABASE_NAME'],
+        user=os.environ['DATABASE_USER'],
+        password=os.environ['DATABASE_PASSWORD'],
+        host=os.environ['DATABASE_HOST']
+    )
+    with conn:
+        with conn.cursor() as curs:
+            curs.execute(postcode_query)
+            results = curs.fetchall()
+            return jsonify(results)
+
 
 @app.errorhandler(BadRequest)
 def handle_bad_request(e):
