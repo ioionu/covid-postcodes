@@ -38,10 +38,19 @@ def load_cases():
             for row in data:
                 # print(row)
                 # ['2020-01-25', '2121', 'Overseas', 'X760', 'Northern Sydney', '16260', 'Parramatta (C)']
+                # TODO: much better validation.
+                try:
+                    d = row[0]
+                    pc = int(row[1])
+                    lga = int(row[5])
+                except Exception as e:
+                    print('issue with row')
+                    continue
                 if (
                     row[0] != "notification_date" and
                     datetime.date.fromisoformat(row[0]) > cut_off_date and
-                    len(row[1]) > 0 and len(row[2]) > 0 and len(row[3]) > 0 and len(row[4]) > 0
+                    len(row[1]) > 0 and
+                    len(row[2]) > 0 and len(row[3]) > 0 and len(row[4]) > 0
                 ):  
                     rows.append(
                         (
@@ -63,12 +72,12 @@ def load_cases():
                             query,
                             rows
                         )
-                        conn.commit()
-                        curs.close()
+                        # conn.commit()
+                        # curs.close()
                         # conn.close()
             except Exception as e:
                 print(e)
-                return True
+                pass
     return True
 
 
