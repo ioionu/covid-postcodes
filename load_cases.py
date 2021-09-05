@@ -36,33 +36,38 @@ def load_cases():
             conn.close()
             rows = []
             for row in data:
-                # print(row)
+
+                # Skip csv header and dates outsout target window.
+                if (
+                    row[0] == "notification_date" or
+                    datetime.date.fromisoformat(row[0]) < cut_off_date
+                ):
+                    continue
+
+                # Note: CSV format.
                 # ['2020-01-25', '2121', 'Overseas', 'X760', 'Northern Sydney', '16260', 'Parramatta (C)']
-                # TODO: much better validation.
+
+                # Make sure integers are integers before we try insert.
+                # TODO: *much* better validation.
                 try:
-                    d = row[0]
                     pc = int(row[1])
                     lga = int(row[5])
                 except Exception as e:
                     print('issue with row')
+                    print(row)
+                    print(e.__str__())
                     continue
-                if (
-                    row[0] != "notification_date" and
-                    datetime.date.fromisoformat(row[0]) > cut_off_date and
-                    len(row[1]) > 0 and
-                    len(row[2]) > 0 and len(row[3]) > 0 and len(row[4]) > 0
-                ):  
-                    rows.append(
-                        (
-                            row[0],
-                            row[1],
-                            row[3],
-                            row[4],
-                            row[5],
-                            row[6],
-                            row[2]
-                        )
+                rows.append(
+                    (
+                        row[0],
+                        row[1],
+                        row[3],
+                        row[4],
+                        row[5],
+                        row[6],
+                        row[2]
                     )
+                )
 
             try:
                 conn = get_connection()
@@ -72,12 +77,14 @@ def load_cases():
                             query,
                             rows
                         )
-                        # conn.commit()
-                        # curs.close()
-                        # conn.close()
+                        conn.commit()
+                        curs.close()
+                        conn.close()
+                        return True
             except Exception as e:
+                print("Error while saving")
                 print(e)
-                pass
+                return True
     return True
 
 
