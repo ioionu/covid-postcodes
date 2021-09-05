@@ -56,15 +56,18 @@ class CustomJSONEncoder(JSONEncoder):
 app = Flask(__name__)
 app.json_encoder = CustomJSONEncoder
 
+def get_connection():
+    return psycopg2.connect(
+        dbname=os.environ['DATABASE_NAME'],
+        user=os.environ['DATABASE_USER'],
+        password=os.environ['DATABASE_PASSWORD'],
+        host=os.environ['DATABASE_HOST']
+    )
+
 @app.route('/api/v1/cases', methods=['POST'])
 def get_data():
     if (request.is_json):
-        conn = psycopg2.connect(
-            dbname=os.environ['DATABASE_NAME'],
-            user=os.environ['DATABASE_USER'],
-            password=os.environ['DATABASE_PASSWORD'],
-            host=os.environ['DATABASE_HOST']
-        )
+        conn = get_connection()
         with conn:
             with conn.cursor() as curs:
                 post = request.get_json()
