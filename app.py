@@ -8,7 +8,7 @@ from load_cases import load_cases
 from lib import get_connection
 
 # Number of days to query back from today.
-WINDOW = 28
+WINDOW = os.environ["WINDOW"]
 
 app = Flask(__name__)
 
