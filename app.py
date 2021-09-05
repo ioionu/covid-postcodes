@@ -4,6 +4,8 @@ from werkzeug.exceptions import BadRequest
 import datetime
 import psycopg2
 import os
+from load_cases import load_cases
+from lib import get_connection
 
 # Number of days to query back from today.
 WINDOW = 28
@@ -55,14 +57,6 @@ class CustomJSONEncoder(JSONEncoder):
 
 app.json_encoder = CustomJSONEncoder
 
-def get_connection():
-    return psycopg2.connect(
-        dbname=os.environ['DATABASE_NAME'],
-        user=os.environ['DATABASE_USER'],
-        password=os.environ['DATABASE_PASSWORD'],
-        host=os.environ['DATABASE_HOST']
-    )
-
 @app.route('/api/v1/cases', methods=['POST'])
 def get_data():
     if (request.is_json):
@@ -103,6 +97,16 @@ def get_postcodes():
             results = curs.fetchall()
             return jsonify(results)
 
+@app.route('/loadcases', methods=['GET'])
+def case_loader():
+    if (
+        "DATABASE_UPDATE_KEY" in os.environ and
+        "key" in request.args and
+        request.args.get('key') == os.environ['DATABASE_UPDATE_KEY']
+    ):
+        load_cases()
+        return "Cases loading"
+    return abort(500, "Key error")
 
 @app.errorhandler(BadRequest)
 def handle_bad_request(e):

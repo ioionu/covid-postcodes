@@ -2,7 +2,7 @@ import psycopg2
 import csv, urllib.request
 import csv
 url = 'https://data.nsw.gov.au/data/dataset/97ea2424-abaf-4f3e-a9f2-b5c883f42b6a/resource/2776dbb8-f807-4fb2-b1ed-184a6fc2c8aa/download/confirmed_cases_table4_location_likely_source.csv'
-from app import get_connection
+from lib import get_connection
 
 query = """
 insert into "case"(
@@ -48,9 +48,11 @@ def load_cases():
                                     )
                                 )
                         conn.commit()
+                        curs.close()
                         conn.close()
                 except Exception as e:
                     print(e)
+    return True
 
 
 if __name__ == "__main__":
