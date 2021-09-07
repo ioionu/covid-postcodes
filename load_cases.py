@@ -25,16 +25,21 @@ values (%s, %s, %s, %s, %s, %s, %s);
 
 def load_cases():
     cut_off_date = (datetime.datetime.now() - datetime.timedelta(days=WINDOW)).date()
+
+    print("Fetching cases from {url}".format(url=url))
     response = urllib.request.urlopen(url)
     lines = [l.decode('utf-8') for l in response.readlines()]
     data = csv.reader(lines)
-    conn = get_connection()
-    curs = conn.cursor()
-    curs.execute("truncate \"case\"")
-    conn.commit()
-    conn.close()
     rows = []
     error_count = 0
+
+    print(
+        "Removing cases from before {cut_off_date} and validating {count} rows".format(
+            cut_off_date=cut_off_date,
+            count=len(lines)
+        )
+    )
+
     for row in data:
 
         # Skip csv header and dates outsout target window.
@@ -72,12 +77,17 @@ def load_cases():
         )
 
     row_count = len(rows)
-    n = 200
+    n = 500
     rows=[rows[i:i + n] for i in range(0, len(rows), n)]
 
     try:
         conn = get_connection()
         curs = conn.cursor()
+
+        print("Truncating existing records")
+        curs.execute("truncate \"case\"")
+
+        print("Loading {row_count} cases.".format(row_count=row_count))
         for chunk in rows:
             curs.executemany(
                 query,
