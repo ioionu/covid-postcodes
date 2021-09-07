@@ -32,7 +32,5 @@ Convert this file to markdown
 Build a simple postcode selector
 Build a postcode selector map
 Much better validation of case data
-Postcode checkboxes
 Schedule fetcher
 Move fetcher to bg task
-Stop throwing 500 errors after importing cases
