@@ -2,13 +2,13 @@ import psycopg2
 import csv, urllib.request
 import csv
 import os
-url = os.environ["SOURCE"]
-# url = 'https://data.nsw.gov.au/data/dataset/97ea2424-abaf-4f3e-a9f2-b5c883f42b6a/resource/2776dbb8-f807-4fb2-b1ed-184a6fc2c8aa/download/confirmed_cases_table4_location_likely_source.csv'
 from lib import get_connection
 import os
 import datetime
 
 WINDOW = int(os.environ["WINDOW"])
+url = os.environ["SOURCE"]
+print_row_error = False
 
 query = """
 insert into "case"(
@@ -29,64 +29,71 @@ def load_cases():
     lines = [l.decode('utf-8') for l in response.readlines()]
     data = csv.reader(lines)
     conn = get_connection()
-    with conn:
-        with conn.cursor() as curs:
-            curs.execute("truncate \"case\"")
-            conn.commit()
-            conn.close()
-            rows = []
-            for row in data:
+    curs = conn.cursor()
+    curs.execute("truncate \"case\"")
+    conn.commit()
+    conn.close()
+    rows = []
+    error_count = 0
+    for row in data:
 
-                # Skip csv header and dates outsout target window.
-                if (
-                    row[0] == "notification_date" or
-                    datetime.date.fromisoformat(row[0]) < cut_off_date
-                ):
-                    continue
+        # Skip csv header and dates outsout target window.
+        if (
+            row[0] == "notification_date" or
+            datetime.date.fromisoformat(row[0]) < cut_off_date
+        ):
+            continue
 
-                # Note: CSV format.
-                # ['2020-01-25', '2121', 'Overseas', 'X760', 'Northern Sydney', '16260', 'Parramatta (C)']
+        # Note: CSV format.
+        # ['2020-01-25', '2121', 'Overseas', 'X760', 'Northern Sydney', '16260', 'Parramatta (C)']
 
-                # Make sure integers are integers before we try insert.
-                # TODO: *much* better validation.
-                try:
-                    pc = int(row[1])
-                    lga = int(row[5])
-                except Exception as e:
-                    print('issue with row')
-                    print(row)
-                    print(e.__str__())
-                    continue
-                rows.append(
-                    (
-                        row[0],
-                        row[1],
-                        row[3],
-                        row[4],
-                        row[5],
-                        row[6],
-                        row[2]
-                    )
-                )
+        # Make sure integers are integers before we try insert.
+        # TODO: *much* better validation.
+        try:
+            pc = int(row[1])
+            lga = int(row[5])
+        except Exception as e:
+            if print_row_error:
+                print('issue with row')
+                print(row)
+                print(e.__str__())
+            error_count = error_count+1
+            continue
+        rows.append(
+            (
+                row[0],
+                row[1],
+                row[3],
+                row[4],
+                row[5],
+                row[6],
+                row[2]
+            )
+        )
 
-            try:
-                conn = get_connection()
-                with conn:
-                    with conn.cursor() as curs:
-                        curs.executemany(
-                            query,
-                            rows
-                        )
-                        conn.commit()
-                        curs.close()
-                        conn.close()
-                        return True
-            except Exception as e:
-                print("Error while saving")
-                print(e)
-                return True
-    return True
+    row_count = len(rows)
+    n = 200
+    rows=[rows[i:i + n] for i in range(0, len(rows), n)]
 
+    try:
+        conn = get_connection()
+        curs = conn.cursor()
+        for chunk in rows:
+            curs.executemany(
+                query,
+                chunk
+            )
+        conn.commit()
+        conn.close()
+        print(
+            'Fetch completed. {row_count} saved to DB. {error_count} cases skipped.'.format(
+                row_count=row_count,
+                error_count=error_count
+            )
+        )
+    except Exception as e:
+        print("Error while saving")
+        print(e)
 
 if __name__ == "__main__":
     load_cases()
