@@ -52,6 +52,22 @@ const fetchPostcodes = async handleClick => {
   document.getElementById("postcodes").appendChild(selectors);
 };
 
+const updateSelectedCheckboxes = () => {
+  document.querySelectorAll("#postcodes input").forEach(input => {
+    ACTIVE_POSTCODES.has(input.value)
+      ? input.checked = true
+      : input.checked = false;
+  });
+};
+
+const updateActivePostcodes = postcodes => {
+  for (postcode of postcodes) {
+    ACTIVE_POSTCODES.has(postcode)
+      ? ACTIVE_POSTCODES.delete(postcode)
+      : ACTIVE_POSTCODES.add(postcode);
+  }
+};
+
 const fetchCases = async postcodes => {
   const resp = await fetch("/api/v1/cases", {
     method: 'POST',
@@ -121,100 +137,93 @@ const transformData = data => {
 };
 
 const app = async () => {
-    const url = new URL(window.location);
-    const postcodesRaw = url.searchParams.get('postcodes');
-    let postcodes = postcodesRaw === null
-      ? []
-      : postcodesRaw.split(',')
-        .map(postcode => parseInt(postcode))
-        .filter(postcode => postcode > 1999 && postcode < 3000);
 
-      // If not postcodes found int URL, use default.
-      if (postcodes.length === 0) {
-        postcodes = DEFAULT_POSTCODES;
-        url.searchParams.set('postcodes', postcodes);
-        history.pushState({}, '', url);
-      }
+  // Get postcodes from URL param.
+  const url = new URL(window.location);
+  const postcodesRaw = url.searchParams.get('postcodes');
+  let postcodes = postcodesRaw === null
+    ? []
+    : postcodesRaw.split(',');
 
-    const data = await fetchCases(postcodes);
-    console.log(data);
-    const { linked, unlinked, average, x } = transformData(data);
-    const chart = bb.generate({
-      title: {
-        text: `Covid cases in postcode(s) ${postcodes}`,
-      },
-      bindto: "#mountpoint",
-      data: {
-          type: "bar",
-          types: {
-            average: "line",
-          },
-          x: "x",
-          columns: [
-            ["x", ...x],
-            ["linked", ...linked],
-            ["unlinked", ...unlinked],
-            ["average", ...average],
-          ],
-          groups: [
-            [
-              "linked", "unlinked",
-            ]
-          ],
-          names:{
-            "average": `${DAYS} day average`,
-          }  
-      },
-      axis: {
-        x: {
-          type: "timeseries",
-          tick: {
-            rotate: -90,
-            format: "%Y-%m-%d",
-          }
-        }
-      },
-      grid: {
-        x: {
-          show: true
-        },
-        y: {
-          show: true
-        }
-      },
-    });
-
-    const handleClick = async (event, postcodes) => {
-      for (postcode of postcodes) {
-        ACTIVE_POSTCODES.has(postcode)
-          ? ACTIVE_POSTCODES.delete(postcode)
-          : ACTIVE_POSTCODES.add(postcode);
-      }
-      console.log(event, ACTIVE_POSTCODES);
-      const fetchedData = await fetchCases([...ACTIVE_POSTCODES]);
-      const transformedData = transformData(fetchedData);
-      updateChart(
-        chart,
-        transformedData
-      );
-
-      // Update checkboxes.
-      document.querySelectorAll("#postcodes input").forEach(input => {
-        ACTIVE_POSTCODES.has(input.value)
-          ? input.checked = true
-          : input.checked = false;
-      });
-
-      // Update URL.
-      const url = new URL(window.location);
-      url.searchParams.set('postcodes', [...ACTIVE_POSTCODES]);
+    // If not postcodes found int URL, use default.
+    if (postcodes.length === 0) {
+      postcodes = DEFAULT_POSTCODES;
+      url.searchParams.set('postcodes', postcodes);
       history.pushState({}, '', url);
-    };
+    }
 
-    await fetchPostcodes(handleClick);
+  updateActivePostcodes(postcodes);
+
+  const data = await fetchCases([...ACTIVE_POSTCODES]);
+  console.log(data);
+  const { linked, unlinked, average, x } = transformData(data);
+  const chart = bb.generate({
+    title: {
+      text: `Covid cases in postcode(s) ${postcodes}`,
+    },
+    bindto: "#mountpoint",
+    data: {
+        type: "bar",
+        types: {
+          average: "line",
+        },
+        x: "x",
+        columns: [
+          ["x", ...x],
+          ["linked", ...linked],
+          ["unlinked", ...unlinked],
+          ["average", ...average],
+        ],
+        groups: [
+          [
+            "linked", "unlinked",
+          ]
+        ],
+        names:{
+          "average": `${DAYS} day average`,
+        }  
+    },
+    axis: {
+      x: {
+        type: "timeseries",
+        tick: {
+          rotate: -90,
+          format: "%Y-%m-%d",
+        }
+      }
+    },
+    grid: {
+      x: {
+        show: true
+      },
+      y: {
+        show: true
+      }
+    },
+  });
+
+  const handleClick = async (event, postcodes) => {
+    updateActivePostcodes(postcodes);
+    console.log(event, ACTIVE_POSTCODES);
+    const fetchedData = await fetchCases([...ACTIVE_POSTCODES]);
+    const transformedData = transformData(fetchedData);
+    updateChart(
+      chart,
+      transformedData
+    );
+
+    // Update checkboxes.
+    updateSelectedCheckboxes();
+
+    // Update URL.
+    const url = new URL(window.location);
+    url.searchParams.set('postcodes', [...ACTIVE_POSTCODES]);
+    history.pushState({}, '', url);
+  };
+
+  await fetchPostcodes(handleClick);
+  updateSelectedCheckboxes();
 };
 
 app();
-
-
 
