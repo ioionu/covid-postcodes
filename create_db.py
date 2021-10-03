@@ -13,12 +13,14 @@ CREATE TABLE public."case" (
 """
 
 def create_db():
+    """
+    Create Empty Case Database.
+    """
     conn = get_connection()
     with conn:
         with conn.cursor() as curs:
             curs.execute(query)
             conn.commit()
-            conn.close()
 
 if __name__ == "__main__":
     create_db()
