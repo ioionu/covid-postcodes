@@ -1,4 +1,4 @@
-from app import get_connection
+from lib import get_connection
 
 query = """
 CREATE TABLE public."case" (

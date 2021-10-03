@@ -5,6 +5,7 @@ import datetime
 import psycopg2
 import os
 from load_cases import load_cases
+from create_db import create_db
 from lib import get_connection
 
 # Number of days to query back from today.
@@ -85,12 +86,7 @@ def get_data():
 
 @app.route('/api/v1/postcodes', methods=['GET'])
 def get_postcodes():
-    conn = psycopg2.connect(
-        dbname=os.environ['DATABASE_NAME'],
-        user=os.environ['DATABASE_USER'],
-        password=os.environ['DATABASE_PASSWORD'],
-        host=os.environ['DATABASE_HOST']
-    )
+    conn = get_connection()
     with conn:
         with conn.cursor() as curs:
             curs.execute(postcode_query)
@@ -107,6 +103,18 @@ def case_loader():
         load_cases()
         return "Cases loading"
     return abort(500, "Key error")
+
+@app.route('/install', methods=['GET'])
+def installer():
+    if (
+        "DATABASE_UPDATE_KEY" in os.environ and
+        "key" in request.args and
+        request.args.get('key') == os.environ['DATABASE_UPDATE_KEY']
+    ):
+        create_db()
+        return "DB installed"
+    return abort(500, "Key error")
+
 
 @app.errorhandler(BadRequest)
 def handle_bad_request(e):
