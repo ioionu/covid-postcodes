@@ -2,9 +2,14 @@ import psycopg2
 import csv, urllib.request
 import csv
 import os
+import logging
 from lib import get_connection
 import os
 import datetime
+
+logging.basicConfig()
+logger = logging.getLogger('logger')
+logger.setLevel(logging.DEBUG)
 
 WINDOW = int(os.environ["WINDOW"])
 url = os.environ["SOURCE"]
@@ -24,6 +29,7 @@ values (%s, %s, %s, %s, %s, %s, %s);
 """
 
 def load_cases():
+    logger.info("Loading cases")
     cut_off_date = (datetime.datetime.now() - datetime.timedelta(days=WINDOW)).date()
 
     print("Fetching cases from {url}".format(url=url))

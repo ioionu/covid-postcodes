@@ -4,9 +4,14 @@ from werkzeug.exceptions import BadRequest
 import datetime
 import psycopg2
 import os
+import logging
 from load_cases import load_cases
 from create_db import create_db
 from lib import get_connection
+
+logging.basicConfig()
+logger = logging.getLogger('logger')
+logger.setLevel(logging.DEBUG)
 
 # Number of days to query back from today.
 WINDOW = int(os.environ["WINDOW"])
@@ -60,6 +65,7 @@ app.json_encoder = CustomJSONEncoder
 
 @app.route('/api/v1/cases', methods=['POST'])
 def get_data():
+    logger.info("Get data")
     if (request.is_json):
         conn = get_connection()
         with conn:
@@ -86,6 +92,7 @@ def get_data():
 
 @app.route('/api/v1/postcodes', methods=['GET'])
 def get_postcodes():
+    logger.info("Getting Postcodes")
     conn = get_connection()
     with conn:
         with conn.cursor() as curs:
@@ -125,5 +132,6 @@ def index():
     return render_template("index.html")
 
 if __name__ == '__main__':
+    logger.info("Starting Application")
     # Threaded option to enable multiple instances for multiple user access support
     app.run(threaded=True, port=5000)

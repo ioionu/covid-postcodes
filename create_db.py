@@ -1,4 +1,9 @@
 from lib import get_connection
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger('logger')
+logger.setLevel(logging.DEBUG)
 
 query = """
 CREATE TABLE public."case" (
@@ -16,6 +21,7 @@ def create_db():
     """
     Create Empty Case Database.
     """
+    logger.info("Creating Database")
     conn = get_connection()
     with conn:
         with conn.cursor() as curs:
