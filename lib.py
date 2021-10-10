@@ -1,5 +1,11 @@
 import psycopg2
 import os
+import logging
+
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig()
+logger = logging.getLogger('logger')
+logger.setLevel(LOGLEVEL)
 
 def get_connection():
     return psycopg2.connect(

@@ -1,9 +1,4 @@
-from lib import get_connection
-import logging
-
-logging.basicConfig()
-logger = logging.getLogger('logger')
-logger.setLevel(logging.DEBUG)
+from lib import get_connection, logger
 
 query = """
 CREATE TABLE public."case" (

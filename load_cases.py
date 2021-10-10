@@ -2,14 +2,9 @@ import psycopg2
 import csv, urllib.request
 import csv
 import os
-import logging
-from lib import get_connection
+from lib import get_connection, logger
 import os
 import datetime
-
-logging.basicConfig()
-logger = logging.getLogger('logger')
-logger.setLevel(logging.DEBUG)
 
 WINDOW = int(os.environ["WINDOW"])
 url = os.environ["SOURCE"]
@@ -32,14 +27,14 @@ def load_cases():
     logger.info("Loading cases")
     cut_off_date = (datetime.datetime.now() - datetime.timedelta(days=WINDOW)).date()
 
-    print("Fetching cases from {url}".format(url=url))
+    logger.info("Fetching cases from {url}".format(url=url))
     response = urllib.request.urlopen(url)
     lines = [l.decode('utf-8') for l in response.readlines()]
     data = csv.reader(lines)
     rows = []
     error_count = 0
 
-    print(
+    logger.info(
         "Removing cases from before {cut_off_date} and validating {count} rows".format(
             cut_off_date=cut_off_date,
             count=len(lines)
@@ -65,9 +60,9 @@ def load_cases():
             lga = int(row[5])
         except Exception as e:
             if print_row_error:
-                print('issue with row')
-                print(row)
-                print(e.__str__())
+                logger.warn('issue with row')
+                logger.warn(row)
+                logger.warn(e.__str__())
             error_count = error_count+1
             continue
         rows.append(
@@ -90,10 +85,10 @@ def load_cases():
         conn = get_connection()
         curs = conn.cursor()
 
-        print("Truncating existing records")
+        logger.info("Truncating existing records")
         curs.execute("truncate \"case\"")
 
-        print("Loading {row_count} cases.".format(row_count=row_count))
+        logger.info("Loading {row_count} cases.".format(row_count=row_count))
         for chunk in rows:
             curs.executemany(
                 query,
@@ -101,15 +96,15 @@ def load_cases():
             )
         conn.commit()
         conn.close()
-        print(
+        logger.info(
             'Fetch completed. {row_count} saved to DB. {error_count} cases skipped.'.format(
                 row_count=row_count,
                 error_count=error_count
             )
         )
     except Exception as e:
-        print("Error while saving")
-        print(e)
+        logger.error("Error while saving")
+        logger.error(e)
 
 if __name__ == "__main__":
     load_cases()

@@ -7,11 +7,7 @@ import os
 import logging
 from load_cases import load_cases
 from create_db import create_db
-from lib import get_connection
-
-logging.basicConfig()
-logger = logging.getLogger('logger')
-logger.setLevel(logging.DEBUG)
+from lib import get_connection, logger
 
 # Number of days to query back from today.
 WINDOW = int(os.environ["WINDOW"])
