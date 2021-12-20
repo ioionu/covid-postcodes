@@ -17,10 +17,9 @@ insert into "case"(
     lhd_2010_code,
     lhd_2010_name,
     lga_code19,
-    lga_name19,
-    likely_source_of_infection
+    lga_name19
 )
-values (%s, %s, %s, %s, %s, %s, %s);
+values (%s, %s, %s, %s, %s, %s);
 """
 
 def load_cases():
@@ -51,7 +50,8 @@ def load_cases():
             continue
 
         # Note: CSV format.
-        # ['2020-01-25', '2121', 'Overseas', 'X760', 'Northern Sydney', '16260', 'Parramatta (C)']
+        # ['2020-01-25', '2134', 'X700', 'Sydney', '11300', 'Burwood (A)']
+
 
         # Make sure integers are integers before we try insert.
         # TODO: *much* better validation.
@@ -72,8 +72,7 @@ def load_cases():
                 row[3],
                 row[4],
                 row[5],
-                row[6],
-                row[2]
+                row[6]
             )
         )
 

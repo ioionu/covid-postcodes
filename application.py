@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from flask import Flask, request, jsonify, render_template, abort
 from flask.json import JSONEncoder
 from werkzeug.exceptions import BadRequest
@@ -24,7 +26,6 @@ left join
     (
         select notification_date, coalesce(count(notification_date),0) as total from public."case"
         where
-            not likely_source_of_infection = 'Locally acquired - linked to known case or cluster' and
             postcode in %s
         group by notification_date
     ) unlinked
@@ -33,7 +34,6 @@ left join
     (
         select notification_date, coalesce(count(notification_date),0) as total from public."case"
         where
-            likely_source_of_infection = 'Locally acquired - linked to known case or cluster' and
             postcode in %s
         group by notification_date
     ) linked

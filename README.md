@@ -18,7 +18,7 @@ RDS_USERNAME="covid"
 RDS_PASSWORD="covid"
 WINDOW=28
 LOGLEVEL=WARN
-SOURCE="https://data.nsw.gov.au/data/dataset/97ea2424-abaf-4f3e-a9f2-b5c883f42b6a/resource/2776dbb8-f807-4fb2-b1ed-184a6fc2c8aa/download/confirmed_cases_table4_location_likely_source.csv"
+SOURCE="https://data.nsw.gov.au/data/dataset/aefcde60-3b0c-4bc0-9af1-6fe652944ec2/resource/21304414-1ff1-4243-a5d2-f52778048b29/download/confirmed_cases_table1_location.csv"
 ```
 
 ### Install requirements
